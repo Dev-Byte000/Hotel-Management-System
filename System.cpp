@@ -1,233 +1,245 @@
 #include <iostream>
 #include <iomanip>
-#include <map>
 #include <string>
+#include <limits>
 using namespace std;
 
 struct Room {
-    int roomNumber;
-    bool isBooked;
+    int number;
     string type;
     double rate;
+    bool booked;
 };
-
 
 struct Guest {
-    string guestId;
-    string name;
-    int checkInDate;
-    int checkoutDate;
+    string id, name;
+    int roomNumber;
+    double foodCharges;
 };
-
 
 class HotelManager {
 private:
-map<int, Room> rooms;
-map<string, Guest> guests;
-int nextGuestId = 1001;
+    Room rooms[5] = {
+        {101, "Single", 1000, false},
+        {102, "Double", 1500, false},
+        {103, "Double", 1500, false},
+        {201, "Single", 1000, false},
+        {202, "Suite", 3000, false}
+    };
+
+    Guest guests[50];
+    int guestCount = 0;
+    int nextId = 1001;
+    double revenue = 0;
+
+    string food[4] = {"Burger", "Fries", "Soda", "Pizza"};
+    double price[4] = {450, 200, 150, 800};
+
+    int findRoom(int number) {
+        for (int i = 0; i < 5; i++)
+            if (rooms[i].number == number)
+                return i;
+
+        return -1;
+    }
+
+    int findGuest(string id) {
+        for (int i = 0; i < guestCount; i++)
+            if (guests[i].id == id)
+                return i;
+
+        return -1;
+    }
 
 public:
-HotelManager() {
-    initializeRooms();
-}
-
-
-void initializeRooms() {
-    rooms[101] = {101, false, "Single", 1000.0};
-    rooms[102] = {102, false, "Double", 1500.0};
-    rooms[103] = {103, true, "Double", 1500.0};
-    rooms[201] = {201, false, "Single", 1000.0};
-    rooms[202] = {202, false, "Suite", 3000.0};
-}
-
-
-void displayMenu() {
-    cout << "\n===============================\n";
-    cout << "  HOTEL MANAGEMENT SYSTEM\n";
-    cout << "===============================\n";
-    cout << "1. Display Room Status\n";
-    cout << "2. Check-In Guest (Booking)\n";
-    cout << "3. Check-Out Guest\n";
-    cout << "4. View All Guests\n";
-    cout << "5. Exit\n";
-    cout << "Enter your choice: ";
-}
-
-
-void displayRoomStatus() {
-    cout << "\n--- Room Status Report ---\n";
-    cout << left << setw(10) << "Room No" 
-         << setw(12) << "Type" 
-         << setw(15) << "Rate (Per Night)" 
-         << setw(12) << "Status" << endl;
-    cout << string(49, '-') << endl;
-
-
-    for (const auto& pair : rooms) {
-        const Room& r = pair.second;
-        string status = r.isBooked ? "BOOKED" : "AVAILABLE";
-        cout << left << setw(10) << r.roomNumber 
-             << setw(12) << r.type 
-             << "$" << fixed << setprecision(2) << right << setw(14) << r.rate
-             << setw(12) << status << endl;
+    void showMenu() {
+        cout << "\n===== HOTEL MANAGEMENT =====\n";
+        cout << "1. Display Rooms\n";
+        cout << "2. Check In\n";
+        cout << "3. Check Out and Bill\n";
+        cout << "4. View Guests\n";
+        cout << "5. Order Food\n";
+        cout << "6. View Revenue\n";
+        cout << "7. Exit\n";
+        cout << "Enter choice: ";
     }
-}
 
+    void displayRooms() {
+        cout << "\nRoom No\tType\tRate\tStatus\n";
 
-int checkAvailableRoom() {
-    cout << "\n--- Available Rooms ---\n";
-    for (const auto& pair : rooms) {
-        if (!pair.second.isBooked) {
-            cout << "Room " << pair.first << " (" << pair.second.type << ") - ID: " << pair.first << endl;
+        for (int i = 0; i < 5; i++) {
+            cout << rooms[i].number << "\t"
+                 << rooms[i].type << "\t"
+                 << rooms[i].rate << "\t"
+                 << (rooms[i].booked ? "Booked" : "Available")
+                 << endl;
         }
     }
-    int roomNum = 0;
-    do {
-        cout << "Enter Room Number to book (or 0 to cancel): ";
-        cin >> roomNum;
-        if (roomNum == 0) return -1;
-        if (rooms.find(roomNum) == rooms.end()) {
-            cout << "Invalid Room Number." << endl;
-        } else if (!rooms[roomNum].isBooked) {
-            return roomNum;
-        } else {
-            cout << "This room is already occupied." << endl;
+
+    void checkIn() {
+        if (guestCount == 50) {
+            cout << "Guest limit reached!\n";
+            return;
         }
-    } while (true);
-}
 
+        displayRooms();
 
-void checkInGuest() {
-    int roomToBook = checkAvailableRoom();
+        int number;
+        cout << "\nEnter room number: ";
+        cin >> number;
 
-    if (roomToBook < 0) return;
+        int index = findRoom(number);
 
-    string guestName;
-    cout << "Enter Guest Name: ";
-    cin >> guestName;
+        if (index == -1 || rooms[index].booked) {
+            cout << "Invalid or unavailable room!\n";
+            return;
+        }
 
-    string newId = "G" + to_string(nextGuestId++);
-    int checkInDate;
-    cout << "Enter Check-In Date (YYYY MM DD): ";
-    cin >> checkInDate;
+        string name;
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
-    int checkoutDate = checkInDate + 3; 
+        cout << "Enter guest name: ";
+        getline(cin, name);
 
+        guests[guestCount].id = "G" + to_string(nextId++);
+        guests[guestCount].name = name;
+        guests[guestCount].roomNumber = number;
+        guests[guestCount].foodCharges = 0;
 
-    Room& bookedRoom = rooms[roomToBook];
-    bookedRoom.isBooked = true;
+        rooms[index].booked = true;
 
+        cout << "Check-in successful!\n";
+        cout << "Guest ID: " << guests[guestCount].id << endl;
 
-    Guest newGuest = {newId, guestName, checkInDate, checkoutDate};
-    guests[newId] = newGuest;
-
-
-    cout << "\n====================================\n";
-    cout << "SUCCESS: Guest " << guestName << " checked into Room " << roomToBook << ".\n";
-    cout << "Booking ID: " << newId << endl;
-    cout << "------------------------------------\n";
-}
-
-
-void checkOutGuest() {
-    string idToCheckOut;
-    cout << "\nEnter Guest ID to check out: ";
-    cin >> idToCheckOut;
-
-    if (guests.find(idToCheckOut) == guests.end()) {
-        cout << "Error: Guest ID not found.\n";
-        return;
+        guestCount++;
     }
 
-    Guest& guest = guests[idToCheckOut];
-    int roomNum = -1;
+    void orderFood() {
+        string id;
 
+        cout << "Enter guest ID: ";
+        cin >> id;
 
-    for (const auto& pair : rooms) {
-        if (pair.second.isBooked) {
-            if (pair.second.rate == 1500.0 && pair.first >= 101 && pair.first <= 202) { 
-                roomNum = pair.first;
+        int index = findGuest(id);
+
+        if (index == -1) {
+            cout << "Guest not found!\n";
+            return;
+        }
+
+        cout << "\n===== FOOD MENU =====\n";
+
+        for (int i = 0; i < 4; i++)
+            cout << i + 1 << ". " << food[i]
+                 << " - Rs. " << price[i] << endl;
+
+        int choice, quantity;
+
+        while (true) {
+            cout << "Enter item number (0 to finish): ";
+            cin >> choice;
+
+            if (choice == 0)
                 break;
+
+            if (choice < 1 || choice > 4) {
+                cout << "Invalid item!\n";
+                continue;
             }
+
+            cout << "Enter quantity: ";
+            cin >> quantity;
+
+            if (quantity <= 0) {
+                cout << "Invalid quantity!\n";
+                continue;
+            }
+
+            double cost = price[choice - 1] * quantity;
+            guests[index].foodCharges += cost;
+
+            cout << "Item added! Cost: Rs. " << cost << endl;
         }
     }
 
+    void checkOut() {
+        string id;
 
-    if (roomNum == -1 || rooms[roomNum].isBooked == false) {
-        cout << "Error: Cannot find or confirm the assigned room for this guest.\n";
-        return;
+        cout << "Enter guest ID: ";
+        cin >> id;
+
+        int index = findGuest(id);
+
+        if (index == -1) {
+            cout << "Guest not found!\n";
+            return;
+        }
+
+        Guest g = guests[index];
+        int roomIndex = findRoom(g.roomNumber);
+
+        double roomBill = rooms[roomIndex].rate * 3;
+        double totalBill = roomBill + g.foodCharges;
+
+        cout << "\n===== FINAL BILL =====\n";
+        cout << "Guest: " << g.name << endl;
+        cout << "Room charges: Rs. " << roomBill << endl;
+        cout << "Food charges: Rs. " << g.foodCharges << endl;
+        cout << "Total bill: Rs. "
+             << fixed << setprecision(2) << totalBill << endl;
+
+        revenue += totalBill;
+        rooms[roomIndex].booked = false;
+
+        for (int i = index; i < guestCount - 1; i++)
+            guests[i] = guests[i + 1];
+
+        guestCount--;
+
+        cout << "Check-out successful!\n";
     }
 
+    void viewGuests() {
+        if (guestCount == 0) {
+            cout << "No active guests.\n";
+            return;
+        }
 
-    rooms[roomNum].isBooked = false;
-    guests.erase(idToCheckOut);
-
-
-    cout << "\n====================================\n";
-    cout << "SUCCESS: Guest " << guest.name << " checked out from Room " << roomNum << ".\n";
-    cout << "Thank you for staying with us!\n";
-    cout << "====================================\n";
-}
-
-
-void viewAllGuests() {
-    if (guests.empty()) {
-        cout << "\n--- No active bookings found ---\n";
-        return;
+        for (int i = 0; i < guestCount; i++) {
+            cout << "\nGuest ID: " << guests[i].id;
+            cout << "\nName: " << guests[i].name;
+            cout << "\nRoom: " << guests[i].roomNumber;
+            cout << "\nFood charges: Rs. "
+                 << guests[i].foodCharges << endl;
+        }
     }
-    
-    cout << "\n--- Active Guest Records ---\n";
-    cout << left << setw(12) << "Guest ID" 
-         << setw(20) << "Name" 
-         << setw(15) << "Check-In Date" 
-         << setw(15) << "Checkout Date" << endl;
-    cout << string(62, '-') << endl;
 
-
-    for (const auto& pair : guests) {
-        const Guest& g = pair.second;
-        cout << left << setw(12) << g.guestId 
-             << setw(20) << g.name 
-             << setw(15) << g.checkInDate 
-             << setw(15) << g.checkoutDate << endl;
+    void viewRevenue() {
+        cout << "Total revenue collected: Rs. "
+             << fixed << setprecision(2) << revenue << endl;
     }
-}
-
 };
 
+int main() {
+    HotelManager hotel;
+    int choice;
 
-void runSystem() {
-    HotelManager hms;
-    int choice = -1;
-
-    while (choice != 5) {
-        hms.displayMenu();
+    do {
+        hotel.showMenu();
         cin >> choice;
 
         switch (choice) {
-            case 1:
-                hms.displayRoomStatus();
-                break;
-            case 2:
-                hms.checkInGuest();
-                break;
-            case 3:
-                hms.checkOutGuest();
-                break;
-            case 4:
-                hms.viewAllGuests();
-                break;
-            case 5:
-                cout << "\nExiting Hotel Management System. Goodbye!\n";
-                break;
-            default:
-                cout << "\nInvalid choice! Please try again.\n";
+            case 1: hotel.displayRooms(); break;
+            case 2: hotel.checkIn(); break;
+            case 3: hotel.checkOut(); break;
+            case 4: hotel.viewGuests(); break;
+            case 5: hotel.orderFood(); break;
+            case 6: hotel.viewRevenue(); break;
+            case 7: cout << "Thank you for visiting!\n"; break;
+            default: cout << "Invalid choice!\n";
         }
-    }
-}
 
+    } while (choice != 7);
 
-int main() {
-    runSystem();
     return 0;
 }
